@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@sap/hana-client": "^2.25.29",
+    "dotenv": "^17.2.0"
+  }
+}
