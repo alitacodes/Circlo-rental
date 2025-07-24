@@ -2,5 +2,16 @@
   "dependencies": {
     "@sap/hana-client": "^2.25.29",
     "dotenv": "^17.2.0"
-  }
+  },
+  "name": "circlo-rental-main",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
