@@ -33,12 +33,26 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // API routes
 app.use('/api', apiRoutes);
 
-// Health check endpoint
+// Health check endpoint with navigation links
 app.get('/', (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
   res.json({ 
     message: 'Circlo Rental API is running!',
     version: '1.0.0',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      'API Documentation': `${baseUrl}/docs`,
+      'Database Test': `${baseUrl}/test-hana`,
+      'Tables Status': `${baseUrl}/test-tables`,
+      'All Items': `${baseUrl}/api/items`,
+      'Categories': `${baseUrl}/api/categories`
+    },
+    authentication_endpoints: {
+      'Register': 'POST ' + `${baseUrl}/api/auth/register`,
+      'Login': 'POST ' + `${baseUrl}/api/auth/login`
+    },
+    note: 'Visit /docs for interactive API documentation'
   });
 });
 
