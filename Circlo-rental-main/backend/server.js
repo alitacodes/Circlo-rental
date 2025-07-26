@@ -1,8 +1,9 @@
-// backend/server.js - Updated with complete API
+// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 
 const { getConnection, getConnectionAsync } = require('./hana');
@@ -33,26 +34,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // API routes
 app.use('/api', apiRoutes);
 
-// Health check endpoint with navigation links
+// Health check endpoint
 app.get('/', (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  
   res.json({ 
     message: 'Circlo Rental API is running!',
     version: '1.0.0',
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      'API Documentation': `${baseUrl}/docs`,
-      'Database Test': `${baseUrl}/test-hana`,
-      'Tables Status': `${baseUrl}/test-tables`,
-      'All Items': `${baseUrl}/api/items`,
-      'Categories': `${baseUrl}/api/categories`
-    },
-    authentication_endpoints: {
-      'Register': 'POST ' + `${baseUrl}/api/auth/register`,
-      'Login': 'POST ' + `${baseUrl}/api/auth/login`
-    },
-    note: 'Visit /docs for interactive API documentation'
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -60,21 +47,19 @@ app.get('/', (req, res) => {
 app.get('/test-hana', async (req, res) => {
   let conn;
   try {
-    const { getConnectionAsync } = require('./hana');
     conn = await getConnectionAsync();
     
-    // Execute test query
     conn.exec('SELECT CURRENT_USER FROM DUMMY', (err, result) => {
       if (err) {
         console.error('HANA query error:', err.message);
         res.status(500).json({ 
           error: 'Query failed', 
-          details: err.message 
+          details: err.message
         });
       } else {
         res.json({ 
+          status: 'Database Connection Successful',
           hanaUser: result[0].CURRENT_USER,
-          status: 'Connected and query executed successfully',
           timestamp: new Date().toISOString()
         });
       }
@@ -84,6 +69,7 @@ app.get('/test-hana', async (req, res) => {
     console.error('HANA connection error:', err.message);
     if (conn) conn.disconnect();
     res.status(500).json({ 
+      status: 'Database Connection Failed',
       error: 'Failed to connect to HANA', 
       details: err.message,
       timestamp: new Date().toISOString()
@@ -95,7 +81,6 @@ app.get('/test-hana', async (req, res) => {
 app.get('/test-tables', async (req, res) => {
   let conn;
   try {
-    const { getConnectionAsync } = require('./hana');
     conn = await getConnectionAsync();
     
     const tables = ['Users', 'Items', 'Bookings', 'Reviews', 'Chats', 'Photos'];
@@ -119,8 +104,16 @@ app.get('/test-tables', async (req, res) => {
       await checkTable(table);
     }
 
+    const totalRecords = results.reduce((sum, table) => sum + (table.count || 0), 0);
+
     res.json({ 
+      status: 'Database Tables Status',
       database: 'SAP HANA Cloud',
+      summary: {
+        total_tables: tables.length,
+        tables_ok: results.filter(r => r.status === 'OK').length,
+        total_records: totalRecords
+      },
       tables: results,
       timestamp: new Date().toISOString()
     });
@@ -128,6 +121,7 @@ app.get('/test-tables', async (req, res) => {
   } catch (err) {
     console.error('Table check error:', err.message);
     res.status(500).json({ 
+      status: 'Table Check Failed',
       error: 'Failed to check tables', 
       details: err.message,
       timestamp: new Date().toISOString()
